@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #ffffff; color: #1b4332; padding: 30px 20px; }
+    form { max-width: 360px; margin: 0 auto; }
+    h1 { color: #2d9f5a; text-align: center; }
+    label { display: block; margin-top: 14px; font-weight: bold; }
+    input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button { width: 100%; margin-top: 20px; padding: 10px; background: #2d9f5a; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    .error { color: #d9534f; text-align: center; }
+    .link { text-align: center; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <form method="POST">
+    <h1>Login</h1>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+    <label for="mobile">Mobile number</label>
+    <input type="tel" id="mobile" name="mobile" pattern="[0-9]{10}" maxlength="10" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Login</button>
+    <p class="link"><a href="/signup">Create new account</a></p>
+  </form>
+</body>
+</html>
