@@ -1,8 +1,10 @@
+import os
 import sqlite3
-from flask import Flask, render_template, request
-from werkzeug.security import generate_password_hash
+from flask import Flask, render_template, request, redirect, url_for, session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 DB = "users.db"
 
 
@@ -64,8 +66,44 @@ def signup():
             return "This mobile number is already registered."
         finally:
             conn.close()
-        return "Account created for " + f["name"] + "."
+        return redirect(url_for("login"))
     return render_template("signup.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        mobile = request.form["mobile"]
+        password = request.form["password"]
+        conn = get_db()
+        user = conn.execute(
+            "SELECT * FROM users WHERE mobile = ?", (mobile,)
+        ).fetchone()
+        conn.close()
+        if user and check_password_hash(user["password_hash"], password):
+            session["user_id"] = user["id"]
+            return redirect(url_for("dashboard"))
+        error = "Wrong mobile number or password."
+    return render_template("login.html", error=error)
+
+
+@app.route("/dashboard")
+def dashboard():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    conn = get_db()
+    user = conn.execute(
+        "SELECT * FROM users WHERE id = ?", (session["user_id"],)
+    ).fetchone()
+    conn.close()
+    return render_template("dashboard.html", user=user)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 
 init_db()

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #ffffff; color: #1b4332; text-align: center; padding: 40px 20px; }
+    h1 { color: #2d9f5a; }
+  </style>
+</head>
+<body>
+  <h1>Welcome, {{ user["name"] }}!</h1>
+  <p>Goal: {{ user["goal"] }} | Diet: {{ user["diet"] }}</p>
+  <p><a href="/logout">Logout</a></p>
+</body>
+</html>
