@@ -15,6 +15,19 @@
   <button id="save-time">Save</button>
   <p id="message"></p>
 
+  <h2>Workout Plan</h2>
+  <label for="exercise-select">Exercise:</label>
+  <select id="exercise-select">
+    <option value="Pushups">Pushups</option>
+    <option value="Squats">Squats</option>
+    <option value="Running">Running</option>
+    <option value="Plank">Plank</option>
+  </select>
+  <label for="exercise-min">Minutes:</label>
+  <input type="number" id="exercise-min" min="1" value="10">
+  <button id="add-exercise">Add</button>
+  <ul id="exercise-list"></ul>
+
   <h2>Food Plan</h2>
   <label for="food-select">Select food:</label>
   <select id="food-select">
@@ -28,6 +41,7 @@
   <input type="number" id="food-qty" min="1" value="1">
   <button id="add-food">Add</button>
   <ul id="food-list"></ul>
+  <p id="total-calories"></p>
 
   <script src="script.js"></script>
 </body>
