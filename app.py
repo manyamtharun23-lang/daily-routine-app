@@ -1,6 +1,7 @@
+import json
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -29,6 +30,14 @@ def init_db():
             diet TEXT NOT NULL,
             mobile TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS user_data (
+            user_id INTEGER PRIMARY KEY,
+            workout_time TEXT,
+            exercises TEXT,
+            foods TEXT
         )"""
     )
     conn.commit()
@@ -107,6 +116,62 @@ def dashboard():
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
+
+@app.route("/api/data", methods=["GET"])
+def get_data():
+    if "user_id" not in session:
+        return jsonify({"error": "login required"}), 401
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM user_data WHERE user_id = ?", (session["user_id"],)
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return jsonify({"workout_time": "", "exercises": [], "foods": []})
+    return jsonify(
+        {
+            "workout_time": row["workout_time"] or "",
+            "exercises": json.loads(row["exercises"] or "[]"),
+            "foods": json.loads(row["foods"] or "[]"),
+        }
+    )
+
+
+@app.route("/api/data", methods=["POST"])
+def save_data():
+    if "user_id" not in session:
+        return jsonify({"error": "login required"}), 401
+    data = request.get_json(silent=True) or {}
+    workout_time = data.get("workout_time", "")
+    exercises = data.get("exercises", [])
+    foods = data.get("foods", [])
+    if (
+        not isinstance(workout_time, str)
+        or not isinstance(exercises, list)
+        or not isinstance(foods, list)
+        or len(exercises) > 200
+        or len(foods) > 200
+    ):
+        return jsonify({"error": "invalid data"}), 400
+    conn = get_db()
+    conn.execute(
+        """INSERT INTO user_data (user_id, workout_time, exercises, foods)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(user_id) DO UPDATE SET
+             workout_time = excluded.workout_time,
+             exercises = excluded.exercises,
+             foods = excluded.foods""",
+        (
+            session["user_id"],
+            workout_time[:10],
+            json.dumps(exercises),
+            json.dumps(foods),
+        ),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "saved"})
 
 
 init_db()
