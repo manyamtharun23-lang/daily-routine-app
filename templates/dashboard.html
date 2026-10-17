@@ -3,14 +3,67 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    body { font-family: Arial, sans-serif; background: #ffffff; color: #1b4332; text-align: center; padding: 40px 20px; }
-    h1 { color: #2d9f5a; }
+    .card { max-width: 360px; margin: 24px auto; border: 2px solid #2d9f5a; border-radius: 10px; padding: 16px; }
+    .bmi { font-size: 32px; color: #2d9f5a; font-weight: bold; }
+    .note { font-size: 12px; color: #40916c; }
   </style>
 </head>
 <body>
   <h1>Welcome, {{ user["name"] }}!</h1>
   <p>Goal: {{ user["goal"] }} | Diet: {{ user["diet"] }}</p>
+
+  {% set bmi = user["weight"] / ((user["height"] / 100) ** 2) %}
+  <div class="card">
+    <h2>Your BMI</h2>
+    <p class="bmi">{{ bmi | round(1) }}</p>
+    <p>
+      {% if bmi < 18.5 %}Underweight
+      {% elif bmi < 25 %}Normal
+      {% elif bmi < 30 %}Overweight
+      {% else %}Obese
+      {% endif %}
+    </p>
+    <p class="note">BMI is only a general guide, not medical advice.</p>
+  </div>
+
+  <h2>Workout Time</h2>
+  <label for="workout-time">Select your workout time:</label>
+  <input type="time" id="workout-time">
+  <button id="save-time">Save</button>
+  <p id="message"></p>
+
+  <h2>Workout Plan</h2>
+  <label for="exercise-select">Exercise:</label>
+  <select id="exercise-select">
+    <option value="Pushups">Pushups</option>
+    <option value="Squats">Squats</option>
+    <option value="Running">Running</option>
+    <option value="Plank">Plank</option>
+  </select>
+  <label for="exercise-min">Minutes:</label>
+  <input type="number" id="exercise-min" min="1" value="10">
+  <button id="add-exercise">Add</button>
+  <ul id="exercise-list"></ul>
+
+  <h2>Food Plan</h2>
+  <label for="food-select">Select food:</label>
+  <select id="food-select">
+    <option value="Egg">Egg</option>
+    <option value="Rice">Rice</option>
+    <option value="Banana">Banana</option>
+    <option value="Almonds">Almonds</option>
+    <option value="Milk">Milk</option>
+  </select>
+  <label for="food-qty">Quantity:</label>
+  <input type="number" id="food-qty" min="1" value="1">
+  <button id="add-food">Add</button>
+  <ul id="food-list"></ul>
+  <p id="total-calories"></p>
+
   <p><a href="/logout">Logout</a></p>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
