@@ -1,38 +1,50 @@
-// ---------- Helpers ----------
-function load(key) {
-  return JSON.parse(localStorage.getItem(key)) || [];
-}
-function save(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
+const calories = { Egg: 70, Rice: 200, Banana: 105, Almonds: 70, Milk: 120 };
 
-// ---------- Workout time ----------
 const timeInput = document.getElementById("workout-time");
 const saveBtn = document.getElementById("save-time");
 const message = document.getElementById("message");
 
-const savedTime = localStorage.getItem("workoutTime");
-if (savedTime) {
-  timeInput.value = savedTime;
-  message.textContent = "Saved workout time: " + savedTime;
-}
-
-saveBtn.addEventListener("click", function () {
-  if (timeInput.value === "") {
-    message.textContent = "Please select a time first.";
-    return;
-  }
-  localStorage.setItem("workoutTime", timeInput.value);
-  message.textContent = "Saved workout time: " + timeInput.value;
-});
-
-// ---------- Workout plan ----------
 const exerciseSelect = document.getElementById("exercise-select");
 const exerciseMin = document.getElementById("exercise-min");
 const addExerciseBtn = document.getElementById("add-exercise");
 const exerciseList = document.getElementById("exercise-list");
 
-let exercises = load("exercises");
+const foodSelect = document.getElementById("food-select");
+const foodQty = document.getElementById("food-qty");
+const addFoodBtn = document.getElementById("add-food");
+const foodList = document.getElementById("food-list");
+const totalCalories = document.getElementById("total-calories");
+
+let workoutTime = "";
+let exercises = [];
+let foods = [];
+
+function saveToServer() {
+  return fetch("/api/data", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      workout_time: workoutTime,
+      exercises: exercises,
+      foods: foods
+    })
+  })
+    .then(function (res) {
+      if (!res.ok) {
+        throw new Error("save failed");
+      }
+    })
+    .catch(function () {
+      message.textContent = "Could not save. Please login again.";
+    });
+}
+
+function showTime() {
+  timeInput.value = workoutTime;
+  if (workoutTime) {
+    message.textContent = "Saved workout time: " + workoutTime;
+  }
+}
 
 function showExercises() {
   exerciseList.innerHTML = "";
@@ -44,34 +56,13 @@ function showExercises() {
     del.className = "delete-btn";
     del.addEventListener("click", function () {
       exercises.splice(index, 1);
-      save("exercises", exercises);
+      saveToServer();
       showExercises();
     });
     li.appendChild(del);
     exerciseList.appendChild(li);
   });
 }
-
-addExerciseBtn.addEventListener("click", function () {
-  const minutes = Number(exerciseMin.value);
-  if (minutes < 1) {
-    return;
-  }
-  exercises.push({ name: exerciseSelect.value, minutes: minutes });
-  save("exercises", exercises);
-  showExercises();
-});
-
-// ---------- Food plan ----------
-const calories = { Egg: 70, Rice: 200, Banana: 105, Almonds: 70, Milk: 120 };
-
-const foodSelect = document.getElementById("food-select");
-const foodQty = document.getElementById("food-qty");
-const addFoodBtn = document.getElementById("add-food");
-const foodList = document.getElementById("food-list");
-const totalCalories = document.getElementById("total-calories");
-
-let foods = load("foods");
 
 function showFoods() {
   foodList.innerHTML = "";
@@ -86,7 +77,7 @@ function showFoods() {
     del.className = "delete-btn";
     del.addEventListener("click", function () {
       foods.splice(index, 1);
-      save("foods", foods);
+      saveToServer();
       showFoods();
     });
     li.appendChild(del);
@@ -95,15 +86,53 @@ function showFoods() {
   totalCalories.textContent = "Total: " + total + " kcal (approx)";
 }
 
+saveBtn.addEventListener("click", function () {
+  if (timeInput.value === "") {
+    message.textContent = "Please select a time first.";
+    return;
+  }
+  workoutTime = timeInput.value;
+  saveToServer().then(function () {
+    message.textContent = "Saved workout time: " + workoutTime;
+  });
+});
+
+addExerciseBtn.addEventListener("click", function () {
+  const minutes = Number(exerciseMin.value);
+  if (minutes < 1) {
+    return;
+  }
+  exercises.push({ name: exerciseSelect.value, minutes: minutes });
+  saveToServer();
+  showExercises();
+});
+
 addFoodBtn.addEventListener("click", function () {
   const qty = Number(foodQty.value);
   if (qty < 1) {
     return;
   }
   foods.push({ name: foodSelect.value, qty: qty });
-  save("foods", foods);
+  saveToServer();
   showFoods();
 });
 
-showExercises();
-showFoods();
+fetch("/api/data")
+  .then(function (res) {
+    if (res.status === 401) {
+      window.location.href = "/login";
+      return null;
+    }
+    return res.json();
+  })
+  .then(function (data) {
+    if (!data) {
+      return;
+    }
+    workoutTime = data.workout_time || "";
+    exercises = data.exercises || [];
+    foods = data.foods || [];
+    showTime();
+    showExercises();
+    showFoods();
+  });
