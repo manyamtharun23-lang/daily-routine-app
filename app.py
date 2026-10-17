@@ -5,7 +5,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
-DB = "users.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB = os.path.join(BASE_DIR, "users.db")
 
 
 def get_db():
@@ -36,7 +37,9 @@ def init_db():
 
 @app.route("/")
 def home():
-    return "Hello Manyam! Backend is working."
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
 
 
 @app.route("/signup", methods=["GET", "POST"])
