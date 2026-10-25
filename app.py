@@ -40,6 +40,19 @@ def init_db():
             foods TEXT
         )"""
     )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS daily_data (
+            user_id INTEGER NOT NULL,
+            day TEXT NOT NULL,
+            exercises TEXT,
+            foods TEXT,
+            water INTEGER DEFAULT 0,
+            workout_done INTEGER DEFAULT 0,
+            diet_done INTEGER DEFAULT 0,
+            water_done INTEGER DEFAULT 0,
+            PRIMARY KEY (user_id, day)
+        )"""
+    )
     conn.commit()
     conn.close()
 
@@ -172,6 +185,121 @@ def save_data():
     conn.commit()
     conn.close()
     return jsonify({"status": "saved"})
+
+
+import re
+from datetime import date, timedelta
+
+
+def valid_day(day):
+    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", day))
+
+
+@app.route("/api/day/<day>", methods=["GET"])
+def get_day(day):
+    if "user_id" not in session:
+        return jsonify({"error": "login required"}), 401
+    if not valid_day(day):
+        return jsonify({"error": "invalid date"}), 400
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM daily_data WHERE user_id = ? AND day = ?",
+        (session["user_id"], day),
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return jsonify(
+            {
+                "exercises": [],
+                "foods": [],
+                "water": 0,
+                "workout_done": False,
+                "diet_done": False,
+                "water_done": False,
+            }
+        )
+    return jsonify(
+        {
+            "exercises": json.loads(row["exercises"] or "[]"),
+            "foods": json.loads(row["foods"] or "[]"),
+            "water": row["water"] or 0,
+            "workout_done": bool(row["workout_done"]),
+            "diet_done": bool(row["diet_done"]),
+            "water_done": bool(row["water_done"]),
+        }
+    )
+
+
+@app.route("/api/day/<day>", methods=["POST"])
+def save_day(day):
+    if "user_id" not in session:
+        return jsonify({"error": "login required"}), 401
+    if not valid_day(day):
+        return jsonify({"error": "invalid date"}), 400
+    data = request.get_json(silent=True) or {}
+    exercises = data.get("exercises", [])
+    foods = data.get("foods", [])
+    water = data.get("water", 0)
+    if (
+        not isinstance(exercises, list)
+        or not isinstance(foods, list)
+        or not isinstance(water, int)
+        or len(exercises) > 200
+        or len(foods) > 200
+        or water < 0
+        or water > 50
+    ):
+        return jsonify({"error": "invalid data"}), 400
+    conn = get_db()
+    conn.execute(
+        """INSERT INTO daily_data
+             (user_id, day, exercises, foods, water,
+              workout_done, diet_done, water_done)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(user_id, day) DO UPDATE SET
+             exercises = excluded.exercises,
+             foods = excluded.foods,
+             water = excluded.water,
+             workout_done = excluded.workout_done,
+             diet_done = excluded.diet_done,
+             water_done = excluded.water_done""",
+        (
+            session["user_id"],
+            day,
+            json.dumps(exercises),
+            json.dumps(foods),
+            water,
+            1 if data.get("workout_done") else 0,
+            1 if data.get("diet_done") else 0,
+            1 if data.get("water_done") else 0,
+        ),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "saved"})
+
+
+@app.route("/api/streak", methods=["GET"])
+def get_streak():
+    if "user_id" not in session:
+        return jsonify({"error": "login required"}), 401
+    conn = get_db()
+    rows = conn.execute(
+        """SELECT day FROM daily_data
+           WHERE user_id = ? AND workout_done = 1
+             AND diet_done = 1 AND water_done = 1""",
+        (session["user_id"],),
+    ).fetchall()
+    conn.close()
+    done = {r["day"] for r in rows}
+    streak = 0
+    d = date.today()
+    if d.isoformat() not in done:
+        d = d - timedelta(days=1)
+    while d.isoformat() in done:
+        streak += 1
+        d = d - timedelta(days=1)
+    return jsonify({"streak": streak})
 
 
 init_db()
