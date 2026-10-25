@@ -8,6 +8,9 @@
     .card { max-width: 360px; margin: 24px auto; border: 2px solid #2d9f5a; border-radius: 10px; padding: 16px; }
     .bmi { font-size: 32px; color: #2d9f5a; font-weight: bold; }
     .note { font-size: 12px; color: #40916c; }
+    .streak { font-size: 20px; color: #2d9f5a; font-weight: bold; }
+    .checks label { display: block; margin: 8px 0; }
+    .water-count { font-size: 24px; color: #2d9f5a; margin: 0 12px; }
   </style>
 </head>
 <body>
@@ -28,11 +31,32 @@
     <p class="note">BMI is only a general guide, not medical advice.</p>
   </div>
 
+  <p id="streak-text" class="streak"></p>
+
+  <h2>Pick a Date</h2>
+  <input type="date" id="day-picker">
+  <p id="status"></p>
+
+  <h2>Daily Checklist</h2>
+  <div class="checks">
+    <label><input type="checkbox" id="chk-workout"> Workout done</label>
+    <label><input type="checkbox" id="chk-diet"> Diet followed</label>
+    <label><input type="checkbox" id="chk-water"> Water goal done</label>
+  </div>
+
+  <h2>Water Tracker</h2>
+  <button id="water-minus">-</button>
+  <span class="water-count" id="water-count">0 / 8</span>
+  <button id="water-plus">+</button>
+  <p class="note">1 button press = 1 glass</p>
+
   <h2>Workout Time</h2>
   <label for="workout-time">Select your workout time:</label>
   <input type="time" id="workout-time">
   <button id="save-time">Save</button>
   <p id="message"></p>
+  <button id="alarm-btn">Turn on workout alarm</button>
+  <p id="alarm-status" class="note"></p>
 
   <h2>Workout Plan</h2>
   <label for="exercise-select">Exercise:</label>
